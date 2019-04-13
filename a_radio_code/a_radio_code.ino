@@ -10,13 +10,13 @@ RDSParser rds;
 #include "Adafruit_SSD1306.h"
 Adafruit_SSD1306 oled(-1);
 
-const int pin_TAB    = 3; // <--------------- low to count preset station up
-const int pin_SELECT = 4; // <--------------- low to count preset station down
+const int pin_TAB    = A2; // <--------------- low to count preset station up
+const int pin_SELECT = A3; // <--------------- low to count preset station down
 
-const int pin_A      = 5; // <--------------- rotation encoder (tuning)
-const int pin_B      = 7; // <--------------- rotation encoder (tuning)
+const int pin_A      = 3;  // <--------------- rotation encoder (tuning)
+const int pin_B      = 4;  // <--------------- rotation encoder (tuning)
 
-int sensorLR         = A1; // <-------------- 25k Poti for volume
+int sensorLR         = A0; // <-------------- 25k Poti for volume
 int func_val         = 650;
 
 bool logg[8] = {0,0,0,0, 0,0,0,0};
