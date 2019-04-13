@@ -10,14 +10,18 @@ RDSParser rds;
 #include "Adafruit_SSD1306.h"
 Adafruit_SSD1306 oled(-1);
 
-const int pin_TAB    = A2; // <--------------- low to count preset station up
-const int pin_SELECT = A3; // <--------------- low to count preset station down
+#define VCCMIN   3650
+#define VCCMAX   4150
+#define PRESETS  11
+
+const int pin_UP   = A2; // <--------------- low to count preset station up
+const int pin_DOWN = A3; // <--------------- low to count preset station down
 
 const int pin_A      = 3;  // <--------------- rotation encoder (tuning)
 const int pin_B      = 4;  // <--------------- rotation encoder (tuning)
 
 int sensorLR         = A0; // <-------------- 25k Poti for volume
-int func_val         = 650;
+int val = 650;
 
 bool logg[8] = {0,0,0,0, 0,0,0,0};
 int tick = 0;
@@ -30,7 +34,7 @@ int valA2 = 0;
 int valB2 = 0;
 
 int idx = 0;
-RADIO_FREQ preset[] = {
+RADIO_FREQ preset[PRESETS] = {
   8770,
   8880,
   8940,
@@ -57,8 +61,8 @@ void readVcc() {
   vcc = ADCL; 
   vcc |= ADCH<<8; 
   vcc = 1126400L / vcc;
-  if (vcc>4150) vcc = 4150;
-  if (vcc<3650) vcc = 3650;
+  if (vcc>VCCMAX) vcc = VCCMAX;
+  if (vcc<VCCMIN) vcc = VCCMIN;
 }
 
 void DisplayServiceName(char *name) {
@@ -74,8 +78,8 @@ void RDS_process(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t blo
 }
 
 void setup() {  
-  pinMode(pin_TAB, INPUT_PULLUP);
-  pinMode(pin_SELECT, INPUT_PULLUP);
+  pinMode(pin_UP,   INPUT_PULLUP);
+  pinMode(pin_DOWN, INPUT_PULLUP);
   pinMode(pin_A, INPUT_PULLUP);
   pinMode(pin_B, INPUT_PULLUP);
     
@@ -101,8 +105,8 @@ void loop() {
   changes = false;
   if (potidelay%2048 == 0) {    
     int vol = radio.getVolume();
-    func_val = 15 - (func_val/256);
-    if (vol != func_val) radio.setVolume(func_val);
+    val = 15 - (val/64);
+    if (vol != val) radio.setVolume(val);
 
     oled.clearDisplay();
     
@@ -110,7 +114,7 @@ void loop() {
     readVcc();
     oled.drawRect(0, 0, 17, 12, WHITE);
     oled.drawRect(17, 4, 2, 4, WHITE);
-    oled.fillRect(2, 2, map(vcc, 3650, 4150, 1, 13), 8, WHITE);
+    oled.fillRect(2, 2, map(vcc, VCCMIN, VCCMAX, 1, 13), 8, WHITE);
 
     // display time
     oled.setCursor(50,0);
@@ -125,13 +129,13 @@ void loop() {
     if (rinfo.rssi > 32) oled.drawLine(127, 10, 127, 0, WHITE);
 
     // display volume
-    oled.drawLine(62, 10, 61  -2*func_val, 12, WHITE);
-    oled.drawLine(62, 10, 61  -2*func_val, 11, WHITE);
-    oled.drawLine(62, 10, 61  -2*func_val, 10, WHITE);
+    oled.drawLine(62, 10, 61  -2*val, 12, WHITE);
+    oled.drawLine(62, 10, 61  -2*val, 11, WHITE);
+    oled.drawLine(62, 10, 61  -2*val, 10, WHITE);
 
-    oled.drawLine(66, 10, 67  +2*func_val, 12, WHITE);
-    oled.drawLine(66, 10, 67  +2*func_val, 11, WHITE);
-    oled.drawLine(66, 10, 67  +2*func_val, 10, WHITE);
+    oled.drawLine(66, 10, 67  +2*val, 12, WHITE);
+    oled.drawLine(66, 10, 67  +2*val, 11, WHITE);
+    oled.drawLine(66, 10, 67  +2*val, 10, WHITE);
 
     // display radio station
     oled.setCursor(0,24);
@@ -143,19 +147,17 @@ void loop() {
     oled.display();    
   }
   
-  func_val = analogRead(sensorLR);
+  val  = analogRead(sensorLR);
   valA = digitalRead(pin_A);
   valB = digitalRead(pin_B);
   
-  if (digitalRead(pin_TAB) == LOW) {
-    if (idx==10) idx=0;
-    else idx++;
+  if (digitalRead(pin_UP) == LOW) {
+    if (idx==PRESETS-1) idx=0; else idx++;
     radio.setFrequency(preset[idx]);
     delay(200);
   }
-  if (digitalRead(pin_SELECT) == LOW) {
-    if (idx==0) idx=10;
-    else idx--;
+  if (digitalRead(pin_DOWN) == LOW) {
+    if (idx==0) idx=PRESETS-1; else idx--;
     radio.setFrequency(preset[idx]);
     delay(200);
   }
